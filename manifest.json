@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "T35 VPN - Secure Browser Proxy",
+  "version": "1.4.0",
+  "description": "T35 VPN — proxy, kill-switch, failover, backup/restore, per-site bypass.",
+  "minimum_chrome_version": "108",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "T35 VPN",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["spoof.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      { "id": "adblock", "enabled": true, "path": "rules/adblock.json" }
+    ]
+  },
+  "permissions": [
+    "proxy",
+    "storage",
+    "webRequest",
+    "webRequestAuthProvider",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess",
+    "privacy",
+    "browsingData",
+    "alarms",
+    "idle",
+    "activeTab"
+  ],
+  "host_permissions": ["<all_urls>"]
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>T35 VPN</title>
+<link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+<div class="app">
+  <header class="brand">
+    <img src="icons/icon48.png" class="brand-logo" alt="T35" />
+    <div class="brand-text">
+      <div class="brand-name">T35 VPN <span class="pro">PRO</span></div>
+      <div class="brand-sub">Secure Browser VPN • v1.4</div>
+    </div>
+    <div id="netDot" class="net-dot off" title="status"></div>
+  </header>
+
+  <section id="hero" class="hero disconnected">
+    <div class="pulse-wrap">
+      <div id="pulse" class="pulse"></div>
+      <button id="powerBtn" class="power" aria-label="Connect">
+        <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M12 2v10h2V2h-2zM10.3 4.1 8.9 5.5A8 8 0 1 0 15.1 5.5l-1.4-1.4A10 10 0 1 1 12 22a10 10 0 0 1-1.7-17.9z"/></svg>
+      </button>
+    </div>
+    <h2 id="statusTitle">You're Unprotected</h2>
+    <p id="statusSub" class="muted">Tap to connect securely</p>
+    <div class="stats">
+      <div class="stat"><span class="k">LOCATION</span><span id="locVal" class="v">—</span></div>
+      <div class="stat"><span class="k">IP</span><span id="ipVal" class="v">—</span></div>
+      <div class="stat"><span class="k">SESSION</span><span id="timeVal" class="v">00:00</span></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="k">DATA SESSION</span><span id="dataSession" class="v">0 MB</span></div>
+      <div class="stat"><span class="k">DATA TODAY</span><span id="dataToday" class="v">0 MB</span></div>
+      <div class="stat"><span class="k">SHIELDS</span><span id="shieldVal" class="v">—</span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><span>Server locations</span><span><span id="fastest" class="link">⚡ fastest</span> • <span id="pingAll" class="link">refresh ping</span></span></div>
+    <div id="serverList" class="servers"></div>
+  </section>
+
+  <section class="section controls">
+    <div class="ctl-row">
+      <div><div class="ctl-title">Kill-switch</div><div class="muted small">Block internet if VPN drops</div></div>
+      <label class="switch"><input type="checkbox" id="killSwitch" checked /><span></span></label>
+    </div>
+    <div class="ctl-row">
+      <div><div class="ctl-title">Auto-connect</div><div class="muted small">Protect on browser start</div></div>
+      <label class="switch"><input type="checkbox" id="autoConn" /><span></span></label>
+    </div>
+    <div class="ctl-row">
+      <div><div class="ctl-title">🛡 WebRTC leak shield</div><div class="muted small">Block real-IP leak via UDP</div></div>
+      <label class="switch"><input type="checkbox" id="fWebrtc" checked /><span></span></label>
+    </div>
+    <div class="ctl-row">
+      <div><div class="ctl-title">🚫 Ad + tracker blocker</div><div class="muted small">15 filter rules, DNR</div></div>
+      <label class="switch"><input type="checkbox" id="fAdblock" checked /><span></span></label>
+    </div>
+    <div class="ctl-row">
+      <div><div class="ctl-title">📍 Location spoof</div><div class="muted small">Fake geo to server city</div></div>
+      <label class="switch"><input type="checkbox" id="fGeo" /><span></span></label>
+    </div>
+    <div class="ctl-row">
+      <div><div class="ctl-title">🔁 Auto-reconnect</div><div class="muted small">Heal dropped proxy</div></div>
+      <label class="switch"><input type="checkbox" id="fReconnect" checked /><span></span></label>
+    </div>
+    <div class="ctl-row">
+      <div><div class="ctl-title">🔀 Auto-failover</div><div class="muted small">Jump to next server on failure</div></div>
+      <label class="switch"><input type="checkbox" id="fFailover" checked /><span></span></label>
+    </div>
+    <div class="ctl-row">
+      <div><div class="ctl-title">🍪 Clear cookies on disconnect</div><div class="muted small">Wipe cookies + cache for privacy</div></div>
+      <label class="switch"><input type="checkbox" id="fClear" /><span></span></label>
+    </div>
+  </section>
+
+  <section class="section tools">
+    <button id="newIp" class="tool">🔄 New IP</button>
+    <button id="leakBtn" class="tool">🕵 Leak test</button>
+    <button id="speedBtn" class="tool">⚡ Speed test</button>
+  </section>
+
+  <details class="advanced">
+    <summary>Advanced • credentials, servers & split-tunnel</summary>
+    <div class="adv-grid">
+      <label>Username<input id="username" placeholder="frontend" autocomplete="off" /></label>
+      <label>Password<input id="password" type="password" placeholder="••••••••" autocomplete="off" /></label>
+    </div>
+    <button id="saveCreds" class="secondary">Save credentials</button>
+    <label class="split">Split-tunnel bypass (one domain per line, skips VPN)
+      <textarea id="bypass" rows="3" placeholder="intranet.local&#10;bank.com"></textarea>
+    </label>
+    <button id="saveBypass" class="secondary">Save bypass list</button>
+    <button id="bypassThis" class="secondary">➕ Bypass this site (no VPN here)</button>
+    <div class="srv-add">
+      <div class="srv-add-title">Backup / restore (no passwords exported)</div>
+      <div class="tools" style="margin-top:8px">
+        <button id="exportCfg" class="tool">⬆ Export</button>
+        <button id="importBtn" class="tool">⬇ Import</button>
+        <input type="file" id="importFile" accept="application/json" hidden />
+      </div>
+    </div>
+    <div class="srv-add">
+      <div class="srv-add-title">Add server (failover pool)</div>
+      <div class="adv-grid">
+        <label>Name<input id="nsName" placeholder="Server 18" /></label>
+        <label>Host<input id="nsHost" placeholder="server18.t35.net" /></label>
+        <label>Port<input id="nsPort" type="number" value="3128" /></label>
+        <label>User<input id="nsUser" placeholder="frontend" /></label>
+      </div>
+      <label>Pass<input id="nsPass" type="password" placeholder="proxy password" /></label>
+      <button id="addSrv" class="secondary">+ Add server</button>
+    </div>
+    <p class="hint">Stored locally only. Default server: server17.t35.net:3128</p>
+  </details>
+
+  <div id="toast" class="toast"></div>
+  <footer class="foot">Browser traffic only • <span class="link" id="checkIp">check IP</span> • t35.net</footer>
+</div>
+<script src="popup.js"></script>
+</body>
+</html>
