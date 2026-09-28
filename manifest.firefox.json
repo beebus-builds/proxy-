@@ -3,7 +3,6 @@
   "name": "T35 Proxy - works in Chrome, Edge, Brave, Firefox, Opera, Vivaldi",
   "version": "2.0.0",
   "description": "Routes browser traffic through the server17.t35.net:3128 authenticated HTTP proxy, with a kill-switch. One codebase, every major browser.",
-  "minimum_chrome_version": "108",
   "permissions": [
     "proxy",
     "storage",
@@ -12,11 +11,17 @@
     "declarativeNetRequest"
   ],
   "host_permissions": ["<all_urls>"],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "t35proxy@local.extension",
+      "strict_min_version": "115.0"
+    }
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "T35 Proxy"
   },
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["background.js"]
   }
 }
