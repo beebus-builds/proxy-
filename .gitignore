@@ -5,3 +5,6 @@ Thumbs.db
 
 # Machine-local proxy credentials. Never commit these.
 secrets.local.json
+
+# Nested clone of this same repo, if one was made inside this folder.
+proxy-/

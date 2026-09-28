@@ -32,6 +32,14 @@ if [ -n "$password" ]; then
 fi
 
 for f in $staged; do
+	# 0. A nested git repository would be committed as an unusable gitlink.
+	#    Catch it before the credential checks so the message is accurate.
+	if git ls-files --stage -- "$f" 2>/dev/null | grep -q '^160000 '; then
+		report "$f is a nested git repository. Commit it separately, or add it to .gitignore."
+		blocked=1
+		continue
+	fi
+
 	# 1. The local secrets file must never be tracked, however it got staged.
 	case "$f" in
 	*secrets.local.json | *.env | .env | .env.*)

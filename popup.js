@@ -35,14 +35,25 @@ function flashSaved() {
 function render() {
   if (!state) return;
 
-  const busyClass = busy ? " busy" : "";
-  el.dot.className = "dot" + (state.enabled ? " on" : state.killSwitch ? " kill" : "") + busyClass;
+  // `active` is the browser's own answer, not our stored flag. Chrome releases
+  // proxy control on extension reload, so `enabled` can be true while nothing
+  // is actually being proxied. Trusting `enabled` here is what made a dead
+  // proxy look like a working connection.
+  const live = state.active === true;
 
-  if (state.enabled) {
+  const busyClass = busy ? " busy" : "";
+  el.dot.className = "dot" + (live ? " on" : state.killSwitch ? " kill" : "") + busyClass;
+
+  if (live) {
     el.headline.textContent = "Connected";
     el.subline.textContent = `${state.host}:${state.port} · ${state.username || "no user"}`;
     el.toggleLabel.textContent = "Disconnect";
     el.toggle.classList.add("off");
+  } else if (state.enabled) {
+    el.headline.textContent = "Not connected";
+    el.subline.textContent = "Proxy is not in effect — traffic is going direct";
+    el.toggleLabel.textContent = "Reconnect";
+    el.toggle.classList.remove("off");
   } else if (state.killSwitch) {
     el.headline.textContent = "Killed";
     el.subline.textContent = "All web traffic is blocked";
@@ -55,12 +66,17 @@ function render() {
     el.toggle.classList.remove("off");
   }
 
-  // Warnings, most important first.
+  // Warnings, most important first. levelOfControl has four distinct values and
+  // only one of them actually means "someone else owns it".
   let banner = "";
   let bad = false;
-  if (state.enabled && state.level && state.level !== "controlled_by_this_extension") {
-    banner = "Another app owns the proxy (" + state.level.replace(/_/g, " ") + "). Traffic may bypass it.";
-  } else if (state.enabled && !state.password) {
+  if (state.level === "controlled_by_other_extensions") {
+    banner = "Another extension controls the proxy. Traffic may bypass it.";
+  } else if (state.level === "not_controllable") {
+    banner = "This extension cannot control the proxy — a browser policy owns it.";
+  } else if (state.enabled && !live) {
+    banner = "The browser is not applying the proxy. Your traffic is NOT being hidden.";
+  } else if (live && !state.password) {
     banner = "No password saved — the proxy will prompt you on every page.";
   } else if (!state.enabled && state.killSwitch) {
     banner = "Kill-switch is on. Nothing loads until you connect.";

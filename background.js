@@ -171,8 +171,27 @@ api.storage.onChanged.addListener(async () => {
 api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
     if (msg.type === "getState") {
-      const s = await getSettings();
-      sendResponse({ ...s, isFirefox: IS_FIREFOX, level: await levelOfControl() });
+      let s = await getSettings();
+      let level = await levelOfControl();
+
+      // Self-heal: storage can say "enabled" while the browser has released
+      // proxy control, which happens whenever the extension is reloaded or
+      // updated. Re-apply once so the popup reflects reality.
+      if (s.enabled && level !== "controlled_by_this_extension") {
+        try {
+          await apply();
+          level = await levelOfControl();
+        } catch (err) {
+          console.warn("re-apply failed:", err.message);
+        }
+      }
+
+      sendResponse({
+        ...s,
+        isFirefox: IS_FIREFOX,
+        level,
+        active: level === "controlled_by_this_extension"
+      });
       return;
     }
     if (msg.type === "save") {
@@ -214,12 +233,21 @@ async function checkIP() {
   } catch (err) {
     const msg = err.message || String(err);
     let reason = "unreachable";
-    if (err.name === "AbortError") reason = "timed out";
-    else if (/407|AUTH/i.test(msg)) reason = "proxy rejected the credentials (407)";
-    else if (/ERR_TUNNEL_CONNECTION_FAILED/i.test(msg)) reason = "proxy blocked the tunnel";
-    else if (/ERR_PROXY_CONNECTION_FAILED/i.test(msg)) reason = "proxy refused the connection";
-    else if (/ERR_BLOCKED_BY_CLIENT|Failed to fetch/i.test(msg))
-      reason = "no response - kill-switch may be blocking everything";
+    if (err.name === "AbortError") {
+      reason = "timed out";
+    } else if (/ERR_INVALID_AUTH_CREDENTIALS|407|AUTH/i.test(msg)) {
+      reason = "proxy rejected the password (407) — check credentials";
+    } else if (/ERR_PROXY_CONNECTION_FAILED|ERR_TUNNEL_CONNECTION_FAILED/i.test(msg)) {
+      reason = "proxy server not responding — it may be offline";
+    } else if (/ERR_PROXY_AUTH_UNSUPPORTED/i.test(msg)) {
+      reason = "proxy does not support Basic auth";
+    } else if (/ERR_BLOCKED_BY_CLIENT/i.test(msg)) {
+      reason = "blocked by the kill-switch";
+    } else if (/ERR_NAME_NOT_RESOLVED/i.test(msg)) {
+      reason = "proxy hostname does not resolve";
+    } else if (/Failed to fetch|NetworkError/i.test(msg)) {
+      reason = "no response from the proxy — likely offline";
+    }
     return { ok: false, reason, detail: msg, ms: Date.now() - started };
   } finally {
     clearTimeout(timer);
