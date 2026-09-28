@@ -2,90 +2,76 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <style>
-    :root { color-scheme: light dark; }
-    body {
-      width: 320px;
-      margin: 0;
-      padding: 14px;
-      font: 13px/1.4 "Segoe UI", system-ui, sans-serif;
-    }
-    h1 { font-size: 15px; margin: 0 0 2px; }
-    .sub { opacity: .65; font-size: 11px; margin-bottom: 11px; }
-    .row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
-    input[type="text"], input[type="number"], input[type="password"] {
-      width: 100%;
-      padding: 6px 8px;
-      border: 1px solid #9996;
-      border-radius: 6px;
-      background: transparent;
-      color: inherit;
-      box-sizing: border-box;
-    }
-    .grid2 { display: grid; grid-template-columns: 1fr 84px; gap: 8px; }
-    .half2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .status { padding: 8px 10px; border-radius: 6px; margin: 0 0 12px; font-size: 12px; }
-    .on { background: #1a7f3722; border: 1px solid #1a7f3755; }
-    .off { background: #88888822; border: 1px solid #88888855; }
-    .warn { background: #b5890022; border: 1px solid #b5890055; }
-    .kill { background: #b23b3b22; border: 1px solid #b23b3b55; }
-    button {
-      padding: 7px 10px;
-      border-radius: 6px;
-      border: 1px solid #9996;
-      background: transparent;
-      color: inherit;
-      cursor: pointer;
-      font: inherit;
-    }
-    button.primary { font-weight: 600; }
-    .muted { opacity: .75; font-size: 12px; min-height: 17px; word-break: break-all; }
-    .ip { font-family: ui-monospace, Consolas, monospace; }
-    .lbl { opacity: .75; font-size: 11px; margin-bottom: 3px; }
-    hr { border: none; border-top: 1px solid #9994; margin: 12px 0; }
-  </style>
+  <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <h1>T35 Proxy</h1>
-  <div class="sub">server17.t35.net:3128 &middot; <span id="engine"></span></div>
-
-  <div id="status" class="status off">Off</div>
-
-  <div class="row">
-    <label for="enabled"><strong>Connect through proxy</strong></label>
-    <input type="checkbox" id="enabled" />
-  </div>
-
-  <div class="lbl">Server</div>
-  <div class="grid2">
-    <input type="text" id="host" placeholder="host" spellcheck="false" />
-    <input type="number" id="port" placeholder="3128" min="1" max="65535" />
-  </div>
-
-  <div class="half2" style="margin-top:9px">
-    <div>
-      <div class="lbl">Username</div>
-      <input type="text" id="username" placeholder="frontend" spellcheck="false" autocomplete="off" />
+  <header class="hero">
+    <span class="dot" id="dot"></span>
+    <div class="hero-text">
+      <h1 id="headline">Disconnected</h1>
+      <p id="subline">Checking status&hellip;</p>
     </div>
-    <div>
-      <div class="lbl">Password</div>
-      <input type="password" id="password" placeholder="required" autocomplete="off" />
+  </header>
+
+  <button id="toggle" class="cta" type="button">
+    <span id="toggleLabel">Connect</span>
+  </button>
+
+  <section class="card">
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">Exit IP</span>
+        <span class="stat-value" id="exitIp">&mdash;</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Latency</span>
+        <span class="stat-value" id="latency">&mdash;</span>
+      </div>
     </div>
-  </div>
+    <button id="check" class="ghost" type="button">Check connection</button>
+  </section>
 
-  <div class="row" style="margin-top:12px">
-    <label for="killSwitch">Kill-switch (block all web traffic while off)</label>
-    <input type="checkbox" id="killSwitch" />
-  </div>
+  <div id="banner" class="banner" hidden></div>
 
-  <hr />
+  <details id="settings" class="panel">
+    <summary>
+      <span>Settings</span>
+      <span class="saved" id="saved" hidden>Saved</span>
+    </summary>
+    <div class="panel-body">
+      <div class="field">
+        <label for="host">Server</label>
+        <div class="pair">
+          <input type="text" id="host" spellcheck="false" autocomplete="off" placeholder="host" />
+          <input type="number" id="port" min="1" max="65535" placeholder="3128" />
+        </div>
+      </div>
 
-  <div class="row">
-    <button id="save" class="primary" style="flex:1">Save &amp; apply</button>
-    <button id="check" style="flex:1">Check IP</button>
-  </div>
+      <div class="field">
+        <label for="username">Credentials</label>
+        <div class="pair">
+          <input type="text" id="username" spellcheck="false" autocomplete="off" placeholder="username" />
+          <input type="password" id="password" autocomplete="off" placeholder="password" />
+        </div>
+      </div>
 
-  <div id="out" class="muted"></div>
+      <div class="switch-row">
+        <div>
+          <span class="switch-label">Kill-switch</span>
+          <span class="switch-hint">Block all web traffic while disconnected</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="killSwitch" />
+          <span class="track"><span class="knob"></span></span>
+        </label>
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    <span id="engine" class="chip">&mdash;</span>
+    <span class="foot-note">Browsers only. Other apps need the bridge.</span>
+  </footer>
 
   <script src="popup.js"></script>
 </body>

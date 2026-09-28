@@ -15,15 +15,14 @@ unless credentials are supplied. Nothing works without them.
 1. `chrome://extensions` (or `edge://extensions`, `brave://extensions`, ...)
 2. Turn on **Developer mode**
 3. **Load unpacked** -> this repo folder (it reads `manifest.json`)
-4. Click the icon, enter your proxy **password**, tick **Connect through proxy**,
-   **Save & apply**
-5. **Check IP** - the exit IP must differ from your normal one
+4. Click the icon and press **Connect**
+5. **Check connection** - the exit IP must differ from your normal one
 
 ### Firefox
 
 1. `about:debugging#/runtime/this-firefox`
 2. **Load Temporary Add-on...** -> pick **`manifest.firefox.json`**
-3. Icon -> enter password -> connect -> **Check IP**
+3. Icon -> **Connect** -> **Check connection**
 
 Temporary add-ons are removed when Firefox closes. For a permanent install,
 sign the extension at addons.mozilla.org, or run `npx web-ext run` during
@@ -82,7 +81,8 @@ fails. The bridge is the free equivalent because it injects the
 
 - **Credentials live in extension-local storage only.** No password is committed
   to this repository, and none should ever be. `background.js` ships
-  `password: ""` on purpose.
+  `password: ""` on purpose; local defaults live in the gitignored
+  `secrets.local.json`.
 - **This is a proxy, not a VPN.** Traffic is not encrypted on the hop to
   `174.138.190.164`. HTTPS sites stay end-to-end encrypted, so the operator sees
   *which* sites you visit, and can read or modify anything sent over plain HTTP.
@@ -92,6 +92,44 @@ fails. The bridge is the free equivalent because it injects the
 - **Not anonymity.** If the proxy is shared, so are its logs. For real anonymity
   use Tor or a proper VPN.
 - The exit address and its geolocation can change at any time.
+
+## Never typing the password again
+
+The popup saves what you type in extension-local storage, so normally you type the
+password **once per browser**, not every session.
+
+Firefox *temporary* add-ons are the exception: they are removed when Firefox
+closes and take their stored data with them, so you would re-enter it on every
+restart. To avoid that, drop your credentials in a local file the extension
+reads on startup:
+
+`secrets.local.json` (already gitignored, never committed):
+
+```json
+{
+  "username": "frontend",
+  "password": "your-proxy-password"
+}
+```
+
+`background.js` fetches it at startup and uses it as the default, so the popup
+opens with everything filled in. It works in both engines and survives extension
+updates. Any value typed in the popup still wins, so you can override per
+browser. A fresh clone has no such file, which is fine - the popup asks once.
+
+This file is plaintext on disk. Anyone with access to this machine can read it,
+so do not commit it, put it in a screenshot, or ship it in a shared zip.
+
+## Using the popup
+
+- **Connect** - one tap, applies immediately
+- **Status line** - the coloured dot shows connected, direct, or killed, and
+  pulses while a check is in flight
+- **Exit IP / latency** - last result is remembered between popup opens
+- **Settings** - collapsible; server, credentials, kill-switch. Fields save as
+  you type (debounced) and on Enter
+- **Warnings** - the banner tells you when another app has taken over the proxy,
+  when no password is saved, and when the kill-switch is blocking you
 
 ## Kill-switch
 
@@ -105,9 +143,10 @@ over a direct connection. It re-enables the moment you connect. Defaults to
 ```
 manifest.json          Chromium
 manifest.firefox.json  Firefox
-background.js          shared: proxy, auth, kill-switch, badge
-popup.html / popup.js  shared: connect, credentials, check IP
+background.js          shared: proxy, auth, kill-switch, badge, local secrets
+popup.html / .css / .js shared: connect, credentials, check, kill-switch
 bridge/                optional all-apps forwarder
+secrets.local.json     your credentials, gitignored, never committed
 t35-v1-archive/        previous Chrome-only v1.4.0 build, kept for reference
 ```
 

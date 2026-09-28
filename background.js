@@ -30,10 +30,36 @@ const DEFAULTS = {
 };
 
 let cached = null;
+let secrets = {};
+let secretsLoaded = false;
+
+// Optional machine-local defaults, shaped like DEFAULTS, e.g.
+//   { "username": "frontend", "password": "..." }
+// This file is gitignored on purpose: it is this machine's copy, never the
+// repository's. A fresh clone simply won't have it and the popup asks once.
+async function loadSecrets() {
+  try {
+    const res = await fetch(api.runtime.getURL("secrets.local.json"));
+    if (!res.ok) return {};
+    const parsed = JSON.parse(await res.text());
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (err) {
+    return {};
+  }
+}
 
 async function getSettings() {
   if (cached) return cached;
-  cached = { ...DEFAULTS, ...(await api.storage.local.get(DEFAULTS)) };
+  if (!secretsLoaded) {
+    secretsLoaded = true;
+    secrets = await loadSecrets();
+  }
+  // get(null) rather than get(DEFAULTS): passing DEFAULTS makes storage fill in
+  // blank values for keys the user never saved, which would mask secrets.
+  const stored = await api.storage.local.get(null);
+  const merged = { ...DEFAULTS, ...secrets, ...stored };
+  if (!merged.password && secrets.password) merged.password = secrets.password;
+  cached = merged;
   return cached;
 }
 
