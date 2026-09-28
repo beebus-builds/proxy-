@@ -120,6 +120,28 @@ browser. A fresh clone has no such file, which is fine - the popup asks once.
 This file is plaintext on disk. Anyone with access to this machine can read it,
 so do not commit it, put it in a screenshot, or ship it in a shared zip.
 
+## Commit guard
+
+`.githooks/pre-commit` refuses commits that would publish credentials. It runs
+three checks:
+
+1. `secrets.local.json` (or any `.env`) is never tracked, even via `git add -f`
+2. your exact password value does not appear in any staged file
+3. no file hardcodes `PROXY_USER=` / `PROXY_PASS=` (markdown is exempt, since it
+   documents those variables with placeholders)
+
+The hook contains no secrets itself - it reads the value from your local
+`secrets.local.json`, so it works on your machine and is simply inert on clones
+that do not have the file.
+
+Activate it once per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+`--no-verify` bypasses it, deliberately.
+
 ## Using the popup
 
 - **Connect** - one tap, applies immediately

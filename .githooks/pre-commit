@@ -1,0 +1,73 @@
+#!/bin/sh
+#
+# Pre-commit guard: refuses to publish proxy credentials.
+#
+# Install (once per clone):
+#   git config core.hooksPath .githooks
+#
+# This file deliberately contains no secrets. The exact-value check reads the
+# gitignored secrets.local.json, so it works on a machine that has one and is
+# simply inert on a machine that does not.
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+blocked=0
+report() {
+	echo ""
+	echo "  commit blocked by .githooks/pre-commit"
+	echo "  $1"
+	echo ""
+}
+
+password=""
+if [ -f secrets.local.json ]; then
+	password=$(sed -n 's/.*"password"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' secrets.local.json)
+fi
+
+# Skip short/empty values so a blank placeholder cannot cause false alarms.
+usable=no
+if [ -n "$password" ]; then
+	usable=$(printf '%s' "$password" | awk '{ print (length($0) >= 6) ? "yes" : "no" }')
+fi
+
+for f in $staged; do
+	# 1. The local secrets file must never be tracked, however it got staged.
+	case "$f" in
+	*secrets.local.json | *.env | .env | .env.*)
+		report "$f is gitignored and holds your proxy password. Unstage it: git restore --staged '$f'"
+		blocked=1
+		continue
+		;;
+	esac
+
+	# 2. The exact password value must not appear in any staged blob.
+	if [ "$usable" = "yes" ]; then
+		if git show ":$f" 2>/dev/null | grep -qF -- "$password"; then
+			report "$f contains your proxy password. Remove the value, keep it in secrets.local.json."
+			blocked=1
+		fi
+	fi
+
+	# 3. A hardcoded bridge credential assignment. Skips markdown, which
+	#    documents these variables with placeholder values.
+	case "$f" in
+	*.md | *.markdown)
+		;;
+	*)
+		if git show ":$f" 2>/dev/null | grep -qE 'PROXY_(USER|PASS)=.+'; then
+			report "$f assigns a bridge credential. Use environment variables instead of hardcoding them."
+			blocked=1
+		fi
+		;;
+	esac
+done
+
+if [ "$blocked" -ne 0 ]; then
+	echo "  Nothing was committed. Unstage the file(s) and try again."
+	echo "  Bypass only if you are certain: git commit --no-verify"
+	echo ""
+	exit 1
+fi
+
+exit 0
